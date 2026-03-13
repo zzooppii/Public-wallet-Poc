@@ -44,3 +44,19 @@
    window.ethereum.request({ method: 'eth_requestAccounts' }).then(console.log);
    ```
 5. 결과값으로 `['0xYourCustomWalletAddress1234...']` 이라는 우리의 조작된 주소가 튀어나옵니다! 즉, 유니스왑이 "로그인 됐네?" 하고 속아 넘어가는 원리입니다.
+
+---
+
+## 🖥️ 터미널에서 통신 아키텍처 눈으로 보기 (Node.js 테스트)
+
+크롬을 켜지 않고도, 브라우저 내부에서 스크립트들이 어떻게 메시지를 토스하는지(Mocking) 터미널로 확인해볼 수 있는 테스트 스크립트가 준비되어 있습니다.
+
+```bash
+node test.js
+```
+
+**결과 화면 예시:**
+1. DApp이 지갑을 호출함 `window.ethereum.request()`
+2. ContentScript가 받아서 Background로 넘김
+3. Background가 주소를 꺼내서 다시 되돌려줌
+이 **"3단 다리 통신 구조"**를 콘솔 로그의 흐름으로 아주 명확하게 이해할 수 있습니다.
