@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Minimal Wallet</title>
+  <style>
+    body {
+      width: 300px;
+      height: 400px;
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      box-sizing: border-box;
+      background-color: #f8f9fa;
+    }
+    
+    .wallet-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 20px;
+      text-align: center;
+      height: 100%;
+    }
+
+    .logo {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin: 0 0 5px 0;
+      color: #333;
+    }
+
+    .address {
+      font-size: 12px;
+      color: #666;
+      background: #eee;
+      padding: 6px 10px;
+      border-radius: 6px;
+      word-break: break-all;
+      margin-bottom: 20px;
+    }
+
+    .balance {
+      font-size: 24px;
+      font-weight: bold;
+      color: #1a1a1a;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+      margin-bottom: 10px;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #1976D2;
+    }
+  </style>
+</head>
+<body>
+  <div class="wallet-container">
+    <div class="logo">🦊</div>
+    <h2>My Cloned Wallet</h2>
+    <div class="address" id="address-box">0xYourCustomWalletAddress1234...</div>
+    <div class="balance">1.5 ETH</div>
+    <button class="btn" id="send-btn">Send Transaction</button>
+    <button class="btn" id="lock-btn" style="background-color: #f44336;">Lock Wallet</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
