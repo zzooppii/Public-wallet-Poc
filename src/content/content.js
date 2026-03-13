@@ -3,7 +3,7 @@
 
 try {
   const scriptTag = document.createElement('script');
-  scriptTag.src = chrome.runtime.getURL('injected.js');
+  scriptTag.src = chrome.runtime.getURL('src/inject/injected.js');
   scriptTag.onload = function () {
     this.remove(); // 로드 완료 후 스크립트 태그 제거하여 깔끔하게 만듦
   };
