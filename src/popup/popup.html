@@ -5,77 +5,111 @@
   <title>Minimal Wallet</title>
   <style>
     body {
-      width: 300px;
-      height: 400px;
+      width: 350px;
       margin: 0;
       padding: 16px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, sans-serif;
       box-sizing: border-box;
       background-color: #f8f9fa;
     }
-    
-    .wallet-container {
+    .container {
       background: white;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       padding: 20px;
-      text-align: center;
-      height: 100%;
     }
-
-    .logo {
-      font-size: 32px;
-      margin-bottom: 10px;
-    }
-
-    h2 {
-      margin: 0 0 5px 0;
-      color: #333;
-    }
-
+    h2 { margin: 0 0 10px 0; text-align: center; }
     .address {
-      font-size: 12px;
+      font-size: 11px;
       color: #666;
       background: #eee;
-      padding: 6px 10px;
-      border-radius: 6px;
+      padding: 6px;
+      border-radius: 4px;
       word-break: break-all;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
-
     .balance {
       font-size: 24px;
       font-weight: bold;
-      color: #1a1a1a;
-      margin-bottom: 30px;
+      text-align: center;
+      margin: 15px 0;
     }
-
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 12px; color: #555; margin-bottom: 4px; }
+    input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
     .btn {
       background-color: #2196F3;
       color: white;
       border: none;
-      padding: 10px 16px;
+      padding: 10px;
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
       width: 100%;
-      margin-bottom: 10px;
-      transition: background-color 0.2s;
+      margin-top: 10px;
     }
-
-    .btn:hover {
-      background-color: #1976D2;
+    .btn:hover { background-color: #1976D2; }
+    .hidden { display: none; }
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      background: #eee;
+      border: none;
+      cursor: pointer;
     }
+    .tab-btn.active { background: #2196F3; color: white; }
+    .tabs { display: flex; margin-bottom: 15px; border-radius: 6px; overflow: hidden; }
   </style>
 </head>
 <body>
-  <div class="wallet-container">
-    <div class="logo">🦊</div>
-    <h2>My Cloned Wallet</h2>
-    <div class="address" id="address-box">0xYourCustomWalletAddress1234...</div>
-    <div class="balance">1.5 ETH</div>
-    <button class="btn" id="send-btn">Send Transaction</button>
-    <button class="btn" id="lock-btn" style="background-color: #f44336;">Lock Wallet</button>
+  <div class="container">
+    <h2>My Wallet (Sepolia)</h2>
+    
+    <div id="setup-view" class="hidden">
+      <div class="form-group">
+        <label>Import Private Key</label>
+        <input type="password" id="private-key-input" placeholder="0x...">
+      </div>
+      <button class="btn" id="import-btn">Import Wallet</button>
+    </div>
+
+    <div id="main-view" class="hidden">
+      <div class="address" id="address-display">Not loaded</div>
+      <div class="balance" id="balance-display">0.00 ETH</div>
+      
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-send">Send</button>
+        <button class="tab-btn" id="tab-settings">Info</button>
+      </div>
+
+      <div id="send-section">
+        <div class="form-group">
+          <label>Recipient Address</label>
+          <input type="text" id="to-input" placeholder="0x...">
+        </div>
+        <div class="form-group">
+          <label>Amount (ETH)</label>
+          <input type="number" id="amount-input" step="0.001" placeholder="0.01">
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <div class="form-group" style="flex: 1;">
+            <label>Max Fee (Gwei)</label>
+            <input type="number" id="max-fee-input" value="2">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label>Priority (Gwei)</label>
+            <input type="number" id="priority-fee-input" value="1.5">
+          </div>
+        </div>
+        <button class="btn" id="submit-send-btn">Send Transaction</button>
+      </div>
+    </div>
   </div>
   <script src="popup.js"></script>
 </body>
