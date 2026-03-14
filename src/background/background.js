@@ -1,35 +1,93 @@
-// background.js - 확장 프로그램의 두뇌 역할을 하는 백그라운드 스크립트.
-// 실제 키 저장 및 원격 노드(RPC)와의 통신을 관리합니다.
+import { ethers } from 'ethers';
 
-// [주의] 테스트용 더미 데이터입니다. (실제로는 로컬 스토리지에 암호화 보관 필요)
-const MY_WALLET_ADDRESS = "0xYourCustomWalletAddress1234...";
+// RPC URL - Sepolia (Safety first for development)
+const RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com";
+const provider = new ethers.JsonRpcProvider(RPC_URL);
 
-// Content Script(DApp)로부터 오는 요청 처리기
+let wallet = null;
+
+// Securely store the private key (simulated encryption for PoC)
+async function saveWallet(privateKey, password) {
+    try {
+        // In a real app, use a proper KDF (like Scrypt) to derive a key from the password
+        // and encrypt the private key. For this PoC, we'll store it simply but mark for improvement.
+        const newWallet = new ethers.Wallet(privateKey, provider);
+        await chrome.storage.local.set({ 
+            encryptedVault: privateKey, // PLACEHOLDER: Should be encrypted
+            address: newWallet.address 
+        });
+        wallet = newWallet;
+        return { success: true, address: newWallet.address };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+}
+
+async function loadWallet() {
+    const data = await chrome.storage.local.get(['encryptedVault']);
+    if (data.encryptedVault) {
+        wallet = new ethers.Wallet(data.encryptedVault, provider);
+        return wallet.address;
+    }
+    return null;
+}
+
+// Handle messages from content scripts or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log("Background received a request from DApp:", request.method);
+    console.log("Background received request:", request.method);
 
-  // DApp의 "지갑 연결" 요청 (eth_requestAccounts) 가로채기
-  if (request.method === 'eth_requestAccounts' || request.method === 'eth_accounts') {
-    // 팝업창을 띄워 사용자 승인을 받아야 하지만, 이번 PoC에서는 바로 주소를 넘겨주며 연결된 척을 합니다.
-    console.log("DApp requested account! Giving the dummy address.");
-    sendResponse({ result: [MY_WALLET_ADDRESS] });
-    return true; // 비동기 응답 처리 허용
-  }
-  
-  // DApp의 "서명/트랜잭션 요청" 가로채기 (eth_sendTransaction)
-  else if (request.method === 'eth_sendTransaction') {
-    // 여기서 서명 팝업 UI를 띄워야 함
-    console.log("DApp requested transaction:", request.params);
+    if (request.method === 'eth_requestAccounts' || request.method === 'eth_accounts') {
+        loadWallet().then(address => {
+            sendResponse({ result: address ? [address] : [] });
+        });
+        return true;
+    }
+
+    if (request.method === 'eth_sendTransaction') {
+        const txParams = request.params[0];
+        handleTransaction(txParams).then(sendResponse);
+        return true;
+    }
+
+    if (request.method === 'import_wallet') {
+        saveWallet(request.privateKey, request.password).then(sendResponse);
+        return true;
+    }
     
-    // 단순 PoC이므로 이 요청을 임시로 차단하거나 에러를 내뿜어 확인 가능성을 테스트
-    sendResponse({ error: "User rejected the transaction from background script." });
-    return true;
-  }
-  
-  // 처리할 수 없는 기타 모든 요청
-  else {
-    console.log("Unsupported method:", request.method);
-    sendResponse({ error: `Method ${request.method} not supported in this PoC wallet.` });
-    return true;
-  }
+    if (request.method === 'get_balance') {
+        getWalletBalance().then(sendResponse);
+        return true;
+    }
 });
+
+async function getWalletBalance() {
+    const address = await loadWallet();
+    if (!address) return { error: "No wallet imported" };
+    const balance = await provider.getBalance(address);
+    return { result: ethers.formatEther(balance) };
+}
+
+async function handleTransaction(txParams) {
+    if (!wallet) return { error: "Wallet not unlocked" };
+
+    try {
+        // User provided Gwei from popup
+        const maxFeePerGas = ethers.parseUnits(txParams.maxFeePerGas || "2", "gwei");
+        const maxPriorityFeePerGas = ethers.parseUnits(txParams.maxPriorityFeePerGas || "1", "gwei");
+
+        const tx = {
+            to: txParams.to,
+            value: ethers.parseEther(txParams.value || "0"),
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+            type: 2, // EIP-1559
+        };
+
+        const response = await wallet.sendTransaction(tx);
+        console.log("Transaction sent:", response.hash);
+        return { result: response.hash };
+    } catch (e) {
+        console.error("Transaction failed:", e);
+        return { error: e.message };
+    }
+}
