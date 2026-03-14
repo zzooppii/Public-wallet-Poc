@@ -1,11 +1,76 @@
-// popup.js - 지갑 팝업 UI의 동작 로직을 담당합니다.
+document.addEventListener('DOMContentLoaded', async () => {
+    const setupView = document.getElementById('setup-view');
+    const mainView = document.getElementById('main-view');
+    const addressDisplay = document.getElementById('address-display');
+    const balanceDisplay = document.getElementById('balance-display');
 
-document.getElementById('send-btn').addEventListener('click', () => {
-    alert("이것은 PoC 지갑입니다. 실제 송금 로직은 연결되지 않았습니다!");
-});
+    // Initial check
+    const response = await chrome.runtime.sendMessage({ method: 'eth_accounts' });
+    if (response && response.result && response.result.length > 0) {
+        showMainView(response.result[0]);
+    } else {
+        setupView.classList.remove('hidden');
+    }
 
-document.getElementById('lock-btn').addEventListener('click', () => {
-    alert("지갑이 로컬 메모리에서 잠금처리 되었습니다 (마치 AES 암호화로 돌아간 것처럼).");
-    document.querySelector('.balance').innerText = 'Locked';
-    document.getElementById('address-box').innerText = '0xHidden...';
+    // Import Logic
+    document.getElementById('import-btn').addEventListener('click', async () => {
+        const privateKey = document.getElementById('private-key-input').value;
+        if (!privateKey.startsWith('0x')) {
+            alert("Private key must start with 0x");
+            return;
+        }
+        
+        const res = await chrome.runtime.sendMessage({ 
+            method: 'import_wallet', 
+            privateKey: privateKey,
+            password: 'demo-password' // Simplified for PoC
+        });
+
+        if (res.success) {
+            showMainView(res.address);
+        } else {
+            alert("Import failed: " + res.error);
+        }
+    });
+
+    // Send Logic
+    document.getElementById('submit-send-btn').addEventListener('click', async () => {
+        const to = document.getElementById('to-input').value;
+        const value = document.getElementById('amount-input').value;
+        const maxFeePerGas = document.getElementById('max-fee-input').value;
+        const maxPriorityFeePerGas = document.getElementById('priority-fee-input').value;
+
+        if (!to || !value) {
+            alert("Fill in all fields");
+            return;
+        }
+
+        const res = await chrome.runtime.sendMessage({
+            method: 'eth_sendTransaction',
+            params: [{
+                to,
+                value,
+                maxFeePerGas,
+                maxPriorityFeePerGas
+            }]
+        });
+
+        if (res.error) {
+            alert("Transaction failed: " + res.error);
+        } else {
+            alert("Transaction sent! Hash: " + res.result);
+        }
+    });
+
+    async function showMainView(address) {
+        setupView.classList.add('hidden');
+        mainView.classList.remove('hidden');
+        addressDisplay.innerText = address;
+        
+        // Load balance
+        const balRes = await chrome.runtime.sendMessage({ method: 'get_balance' });
+        if (balRes.result) {
+            balanceDisplay.innerText = `${parseFloat(balRes.result).toFixed(4)} ETH`;
+        }
+    }
 });
