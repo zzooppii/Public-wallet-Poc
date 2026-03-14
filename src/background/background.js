@@ -6,7 +6,12 @@ const provider = new ethers.JsonRpcProvider(RPC_URL);
 
 let wallet = null;
 
-// Securely store the private key (simulated encryption for PoC)
+/**
+ * Securely store the private key (simulated encryption for PoC)
+ * @param {string} privateKey - The raw private key string
+ * @param {string} password - The user's wallet password
+ * @returns {Promise<{success: boolean, address?: string, error?: string}>}
+ */
 async function saveWallet(privateKey, password) {
     try {
         // In a real app, use a proper KDF (like Scrypt) to derive a key from the password
