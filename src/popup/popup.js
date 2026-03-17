@@ -14,9 +14,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Import Logic
     document.getElementById('import-btn').addEventListener('click', async () => {
-        const privateKey = document.getElementById('private-key-input').value;
-        if (!privateKey.startsWith('0x')) {
-            alert("Private key must start with 0x");
+        const privateKey = document.getElementById('private-key-input').value.trim();
+        if (!privateKey) {
+            alert("Please enter a private key or mnemonic phrase.");
             return;
         }
         
@@ -30,6 +30,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             showMainView(res.address);
         } else {
             alert("Import failed: " + res.error);
+        }
+    });
+
+    document.getElementById('create-btn').addEventListener('click', async () => {
+        const res = await chrome.runtime.sendMessage({ method: 'generate_wallet' });
+        if (res.success) {
+            document.getElementById('mnemonic-display').classList.remove('hidden');
+            document.getElementById('mnemonic-text').innerText = res.mnemonic;
+            
+            // Wait 5 seconds to let them copy before redirecting to main view for PoC sake
+            const btn = document.getElementById('create-btn');
+            btn.innerText = "Wallet Created!";
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                showMainView(res.address);
+            }, 8000);
+        } else {
+            alert("Creation failed: " + res.error);
         }
     });
 
