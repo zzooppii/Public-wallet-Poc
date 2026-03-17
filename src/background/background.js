@@ -12,13 +12,16 @@ let wallet = null;
  * @param {string} password - The user's wallet password
  * @returns {Promise<{success: boolean, address?: string, error?: string}>}
  */
-async function saveWallet(privateKey, password) {
+async function saveWallet(privateKeyOrMnemonic, password) {
     try {
-        // In a real app, use a proper KDF (like Scrypt) to derive a key from the password
-        // and encrypt the private key. For this PoC, we'll store it simply but mark for improvement.
-        const newWallet = new ethers.Wallet(privateKey, provider);
+        let newWallet;
+        if (privateKeyOrMnemonic.includes(' ')) {
+            newWallet = ethers.Wallet.fromPhrase(privateKeyOrMnemonic, provider);
+        } else {
+            newWallet = new ethers.Wallet(privateKeyOrMnemonic, provider);
+        }
         await chrome.storage.local.set({ 
-            encryptedVault: privateKey, // PLACEHOLDER: Should be encrypted
+            encryptedVault: newWallet.privateKey, // PLACEHOLDER: Should be encrypted with password
             address: newWallet.address 
         });
         wallet = newWallet;
@@ -37,6 +40,9 @@ async function loadWallet() {
     return null;
 }
 
+let pendingTransactions = {};
+let txCounter = 0;
+
 // Handle messages from content scripts or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("Background received request:", request.method);
@@ -50,12 +56,64 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     if (request.method === 'eth_sendTransaction') {
         const txParams = request.params[0];
-        handleTransaction(txParams).then(sendResponse);
+        const txId = String(++txCounter);
+        
+        pendingTransactions[txId] = {
+            txParams,
+            origin: sender.origin,
+            sendResponse
+        };
+
+        chrome.windows.create({
+            url: chrome.runtime.getURL(`notification.html?id=${txId}`),
+            type: 'popup',
+            width: 380,
+            height: 600
+        });
+
+        return true;
+    }
+
+    if (request.method === 'get_pending_tx') {
+        sendResponse(pendingTransactions[request.txId]);
+        return;
+    }
+
+    if (request.method === 'approve_tx') {
+        const pending = pendingTransactions[request.txId];
+        if (pending) {
+            handleTransaction(pending.txParams).then(res => {
+                pending.sendResponse(res);
+                delete pendingTransactions[request.txId];
+                sendResponse({ success: true });
+            });
+            return true;
+        }
+    }
+
+    if (request.method === 'reject_tx') {
+        const pending = pendingTransactions[request.txId];
+        if (pending) {
+            pending.sendResponse({ error: "User rejected the transaction." });
+            delete pendingTransactions[request.txId];
+            sendResponse({ success: true });
+        }
         return true;
     }
 
     if (request.method === 'import_wallet') {
         saveWallet(request.privateKey, request.password).then(sendResponse);
+        return true;
+    }
+
+    if (request.method === 'generate_wallet') {
+        const randomWallet = ethers.Wallet.createRandom();
+        saveWallet(randomWallet.privateKey, 'demo-password').then(res => {
+            if (res.success) {
+                res.mnemonic = randomWallet.mnemonic.phrase;
+            }
+            sendResponse(res);
+        });
         return true;
     }
     
