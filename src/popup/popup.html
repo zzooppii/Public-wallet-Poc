@@ -73,10 +73,17 @@
     
     <div id="setup-view" class="hidden">
       <div class="form-group">
-        <label>Import Private Key</label>
-        <input type="password" id="private-key-input" placeholder="0x...">
+        <label>Import Private Key or Mnemonic Phrase</label>
+        <input type="password" id="private-key-input" placeholder="0x... or 12 words">
       </div>
       <button class="btn" id="import-btn">Import Wallet</button>
+      
+      <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
+      
+      <button class="btn" id="create-btn" style="background-color: #4CAF50;">Create New Wallet</button>
+      <div id="mnemonic-display" class="hidden" style="margin-top: 10px; padding: 10px; background: #fff3cd; color: #856404; font-size: 11px; border-radius: 6px; word-break: break-word;">
+        <strong>Save your backup phrase:</strong><br><span id="mnemonic-text"></span>
+      </div>
     </div>
 
     <div id="main-view" class="hidden">
